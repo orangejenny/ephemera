@@ -6,26 +6,34 @@ import requests
 import sys
 from requests.auth import HTTPBasicAuth
 
-if len(sys.argv) != 2:
+if len(sys.argv) < 2:
     raise Exception("Usage: greenhouse.py TOKEN")
 
-TOKEN = sys.argv[1]
 BASE_URL = "https://harvest.greenhouse.io/v1/"
+TOKEN = sys.argv[1]
+DATA_DIR = ""    # TODO: add ability to overwrite existing files instead of reading from them
 printer = pprint.PrettyPrinter(indent=4)
 # pp.pprint(stuff)
 
 def list_things(type):
-    all_things = []
-    things = []
-    page = 1
-    while page == 1 or len(things):
-        response = requests.get("{}/{}/?per_page=500&page={}".format(BASE_URL, type, page), auth=HTTPBasicAuth(TOKEN, ''))
-        things = json.loads(response.text)
-        print "fetching page {} of {}".format(page, type)
-        if response.status_code != 200:
-            raise Exception("{}: {}".format(response.status_code, response.text))
-        all_things = all_things + things
-        page = page + 1
+    filename = "{}/{}.json".format(DATA_DIR, type)
+    if False:    # TODO: if file exists, read from file
+        pass
+    else:
+        all_things = []
+        things = []
+        page = 1
+        while page == 1 or len(things):
+            response = requests.get("{}/{}/?per_page=500&page={}".format(BASE_URL, type, page), auth=HTTPBasicAuth(TOKEN, ''))
+            things = json.loads(response.text)
+            print "fetching page {} of {}".format(page, type)
+            if response.status_code != 200:
+                raise Exception("{}: {}".format(response.status_code, response.text))
+            all_things = all_things + things
+            page = page + 1
+        # TODO: write to file
+
+    # TODO: add verbose param
     print "found {} {}".format(len(all_things), type)
     return all_things
 
@@ -96,6 +104,23 @@ print "{} second rounds ({}% of phone screens)".format(len(second_round_candidat
 print "{} final rounds ({}% of second rounds)".format(len(final_round_candidates), math.floor(len(final_round_candidates) * 100 / len(second_round_candidates) + 0.5))
 print "{}% of final rounds passed (or are still active)".format(len(final_round_applications_not_rejected) * 100 / len(final_round_candidates))
 print ""
+
+# Phone screen question frequency
+print ""
+print "PHONE SCREENS"
+phone_screen_questions = {}     # id => { questions => set(), answers => { 'answer' => count } }
+for s in phone_screen_scorecards:
+    for q in s['questions']:
+        if q['id']:     # the notes questions don't have ids
+            if q['answer'] in ['Average', 'Strong', 'Weak']:
+                name = q['question'].lower()
+                name = re.sub(r'^q[0-9]*\s*:?', '', name)
+                if name not in phone_screen_questions:
+                    phone_screen_questions[name] = {}
+                if q['answer'] not in phone_screen_questions[name]:
+                    phone_screen_questions[name][q['answer']] = 0
+                phone_screen_questions[name][q['answer']] = phone_screen_questions[name][q['answer']] + 1
+printer.pprint(phone_screen_questions)
 
 # Frequency with which 2nd round tech interviews disagree
 technical_second_round_results = {}
@@ -172,9 +197,8 @@ print ""
 # TODO: phone screen: frequency with which questions are asked
 # TODO: phone screen: how well do question responses correlate with eventual success?
 
-# TODO: How often does an earlier interviewer change their mind by the final round?
+# TODO: How often does an earlier interviewer change their mind by the final round? (Should they bother coming?)
 
-# TODO: move into real repo, off of gist
 # TODO: Filter interview types better, limit to exact the expected types
 # TODO: deal with applications, not candidates
 # TODO: move each section into a function to more easily comment out
