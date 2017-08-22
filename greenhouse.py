@@ -1,3 +1,4 @@
+import argparse
 import json
 import math
 import os.path
@@ -7,18 +8,20 @@ import requests
 import sys
 from requests.auth import HTTPBasicAuth
 
-if len(sys.argv) < 2:
-    raise Exception("Usage: greenhouse.py TOKEN")
+parser = argparse.ArgumentParser(description='Analyze applicant data')
+parser.add_argument('--token', help='API token')
+parser.add_argument('--refresh', action='store_true', help='Overwrite data files')
+arguments = parser.parse_args(sys.argv[1:])
 
 BASE_URL = "https://harvest.greenhouse.io/v1/"
-TOKEN = sys.argv[1]
+TOKEN = arguments.token
+REFRESH_DATA = arguments.refresh
 DATA_DIR = "data"
-printer = pprint.PrettyPrinter(indent=4)
-# pp.pprint(stuff)
+printer = pprint.PrettyPrinter(indent=4)    # pp.pprint(stuff)
 
 def list_things(type):
     filename = "{}/{}.json".format(DATA_DIR, type)
-    if os.path.isfile(filename):
+    if os.path.isfile(filename) and not REFRESH_DATA:
         print "reading from {}".format(filename)
         with open(filename) as data:
             all_things = json.load(data)
@@ -205,7 +208,6 @@ print ""
 # TODO: Filter interview types better, limit to exact the expected types
 # TODO: deal with applications, not candidates
 # TODO: move each section into a function to more easily comment out
-# TODO: add ability to overwrite existing files instead of reading from them
 '''
 - has an id
 - has a series of stages, each with 1 or more scorecards
