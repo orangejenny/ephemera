@@ -1,5 +1,6 @@
 import json
 import math
+import os.path
 import pprint
 import re
 import requests
@@ -11,14 +12,16 @@ if len(sys.argv) < 2:
 
 BASE_URL = "https://harvest.greenhouse.io/v1/"
 TOKEN = sys.argv[1]
-DATA_DIR = ""    # TODO: add ability to overwrite existing files instead of reading from them
+DATA_DIR = "data"
 printer = pprint.PrettyPrinter(indent=4)
 # pp.pprint(stuff)
 
 def list_things(type):
     filename = "{}/{}.json".format(DATA_DIR, type)
-    if False:    # TODO: if file exists, read from file
-        pass
+    if os.path.isfile(filename):
+        print "reading from {}".format(filename)
+        with open(filename) as data:
+            all_things = json.load(data)
     else:
         all_things = []
         things = []
@@ -31,9 +34,9 @@ def list_things(type):
                 raise Exception("{}: {}".format(response.status_code, response.text))
             all_things = all_things + things
             page = page + 1
-        # TODO: write to file
+        with open(filename, 'w') as outfile:
+            json.dump(all_things, outfile)
 
-    # TODO: add verbose param
     print "found {} {}".format(len(all_things), type)
     return all_things
 
@@ -202,4 +205,9 @@ print ""
 # TODO: Filter interview types better, limit to exact the expected types
 # TODO: deal with applications, not candidates
 # TODO: move each section into a function to more easily comment out
-# TODO: option to save data
+# TODO: add ability to overwrite existing files instead of reading from them
+'''
+- has an id
+- has a series of stages, each with 1 or more scorecards
+- has an overall status
+'''
