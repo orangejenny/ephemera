@@ -143,7 +143,6 @@ for id, a in DEV_APPLICATIONS.iteritems():
                 technical_results[id] = ''
             technical_results[id] = technical_results[id] + binary_result(s)
 
-
 passed_both = len([id for id, result in technical_results.iteritems() if result == '11'])
 failed_both = len([id for id, result in technical_results.iteritems() if result == '00'])
 disagreements = [id for id, result in technical_results.iteritems() if result in ['01', '10']]
@@ -155,10 +154,33 @@ print "{} passed both ({}%)".format(passed_both, percent_of(passed_both, total))
 print "{} failed both ({}%)".format(failed_both, percent_of(failed_both, total))
 print "{} disagreed ({}%)".format(len(disagreements), percent_of(len(disagreements), total))
 print "Of the disagreements, {} ({}%) went on to final round".format(len(set(disagreements) & set(final_rounds)), percent_of(len(set(disagreements) & set(final_rounds)), len(disagreements)))
-print "Of the disagreements, {} ({}%) ultimately succeeded".format(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['offered'])), percent_of(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['offered'])), len(disagreements)))
+print "Of the disagreements, {} ({}%) ultimately received an offer".format(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['offered'])), percent_of(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['offered'])), len(disagreements)))
+print "Of the disagreements, {} ({}%) are still active".format(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['active'])), percent_of(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['active'])), len(disagreements)))
 
 print "\nSECOND ROUND NON-TECHNICAL"
 print "{}% passed (of {} total non-technical interviews)".format(percent_of(len([r for r in nontechnical_results.values() if r == '1']), len(nontechnical_results)), len(nontechnical_results))
+
+second_round_combined = []
+for id, result in nontechnical_results.iteritems():
+    if len(technical_results[id]) == 2 and len(result) == 1:
+        second_round_combined.append({
+            'id': id,
+            'technical': 'passed both' if technical_results[id] == '11' else ('failed both' if technical_results[id] == '00' else 'mixed'),
+            'nontechnical': 'yes' if result == '1' else 'no',
+            'final_round': 'yes' if len(DEV_APPLICATIONS[id]['stages'][2]) or DEV_APPLICATIONS[id]['status'] == 'active' else 'no',
+        })
+second_round_combined.sort(key=lambda x: x['final_round'] + x['technical'] + x['nontechnical'])
+
+print "\nSECOND ROUND OVERALL"
+print "Technical\tNon-technical\tMoved to final round?"
+for result in second_round_combined:
+    print "{}\t{}{}\t\t{}".format(
+        result['technical'],
+        "\t" if result['technical'] == 'mixed' else "",
+        result['nontechnical'],
+        result['final_round'],
+    )
+
 
 
 print "\nFINAL ROUNDS"
@@ -214,7 +236,7 @@ for name, results in interviewers.iteritems():
     passes = len([scorecard for stages in results for scorecard in stages if re.search(r'yes', scorecard['overall_recommendation'])])
     total = len([scorecard for stages in results for scorecard in stages])
     interviewer_stats.append({
-        'stat': "{} has a {}% pass rate over {} interviews, {}% aligned ({}, {}, {})".format(
+        'stat': "{} has a {}% pass rate over {} interviews {}% aligned ({}, {}, {})".format(
             name,
             percent_of(passes, total),
             total,
