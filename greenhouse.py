@@ -75,27 +75,47 @@ departments = list_things('departments')
 tech_department_id = next(d['id'] for d in departments if d['name'].lower() == 'tech')
 jobs = list_things('jobs')
 tech_job_ids = set([j['id'] for j in jobs if tech_department_id in [d['id'] for d in j['departments']]])
+candidates = list_things('candidates')
 applications = list_things('applications')
 tech_application_ids = set([a['id'] for a in applications if set([j['id'] for j in a['jobs']]) & tech_job_ids])
 scorecards = list_things('scorecards')
 tech_scorecards = [s for s in scorecards if s['application_id'] in tech_application_ids]
 dev_scorecards = [s for s in tech_scorecards if s['interview'] in DEV_INTERVIEW_TYPES]
 
+candidates_by_id = {c['id']: c for c in candidates}
 applications_by_id = {a['id']: a for a in applications}
 DEV_APPLICATIONS = {}
 for s in dev_scorecards:
     if s['application_id'] not in DEV_APPLICATIONS:
+        application = applications_by_id[s['application_id']]
+        candidate = candidates_by_id[application['candidate_id']]
         DEV_APPLICATIONS[s['application_id']] = {
+            'name': "{} {}".format(candidate['first_name'], candidate['last_name']),
             'stages': [
                 [],     # phone screen scorecard
                 [],     # second round scorecards
                 [],     # final round scorecards
             ],
-            'status': applications_by_id[s['application_id']]['status'],    # note that 'rejected' might mean candidate declined offer,
-                                                                            # which makes all stats related to this field suspect
+            'status': application['status'],    # note that 'rejected' might mean candidate declined offer, need rejection_direction too
+            'rejection_direction': application['rejection_reason']['type']['name'] if application['rejection_reason'] else '',
         }
     DEV_APPLICATIONS[s['application_id']]['stages'][DEV_INTERVIEW_STAGES[s['interview']]].append(s)
-DEV_APPLICATIONS_NOT_REJECTED = {id: a for id, a in DEV_APPLICATIONS.iteritems() if len(a['stages'][2]) and a['status'] != 'rejected'}
+
+FINAL_ROUND_DECISIONS = {
+    'rejected': [], # list of application ids
+    'offered': [],
+    'active': [],
+}
+for id, a in DEV_APPLICATIONS.iteritems():
+    if len(a['stages'][2]):
+        if a['status'] == 'active':
+            FINAL_ROUND_DECISIONS['active'].append(id)
+        if a['status'] == 'hired':
+            FINAL_ROUND_DECISIONS['offered'].append(id)
+        elif a['status'] == 'rejected' and a['rejection_direction'] == 'They rejected us':
+            FINAL_ROUND_DECISIONS['offered'].append(id)
+        elif a['status'] == 'rejected' and a['rejection_direction'] == 'We rejected them':
+            FINAL_ROUND_DECISIONS['rejected'].append(id)
 
 
 # Funnel of stages
@@ -107,8 +127,8 @@ print "\nFUNNEL"
 print "{} phone screens".format(totals[0])
 print "{} second rounds ({}% of phone screens)".format(totals[1], percent_of(totals[1], totals[0]))
 print "{} final rounds ({}% of second rounds)".format(totals[2], percent_of(totals[2], totals[1]))
-print "{} final rounds not rejected ({}% of final rounds)".format(len(DEV_APPLICATIONS_NOT_REJECTED), percent_of(len(DEV_APPLICATIONS_NOT_REJECTED), totals[2]))
-
+print "{} final rounds offered ({}% of final rounds)".format(len(FINAL_ROUND_DECISIONS['offered']), percent_of(len(FINAL_ROUND_DECISIONS['offered']), totals[2]))
+print "{} final rounds still active ({}% of final rounds)".format(len(FINAL_ROUND_DECISIONS['active']), percent_of(len(FINAL_ROUND_DECISIONS['active']), totals[2]))
 
 # Frequency with which 2nd round tech interviews disagree
 technical_results = {}
@@ -127,13 +147,14 @@ passed_both = len([id for id, result in technical_results.iteritems() if result 
 failed_both = len([id for id, result in technical_results.iteritems() if result == '00'])
 disagreements = [id for id, result in technical_results.iteritems() if result in ['01', '10']]
 total = len([id for id, result in technical_results.iteritems() if len(result) == 2])
+final_rounds = [id for id, a in DEV_APPLICATIONS.iteritems() if a['stages'][2]]
 
 print "\nSECOND ROUND TECHNICAL ({} total interviews)".format(total)
 print "{} passed both ({}%)".format(passed_both, percent_of(passed_both, total))
 print "{} failed both ({}%)".format(failed_both, percent_of(failed_both, total))
 print "{} disagreed ({}%)".format(len(disagreements), percent_of(len(disagreements), total))
-print "Of the disagreements, {}% went on to final round".format(percent_of(len(set(disagreements) & set([id for id, a in DEV_APPLICATIONS.iteritems() if a['stages'][2]])), len(disagreements)))
-print "Of the disagreements, {}% ultimately succeeded".format(percent_of(len(set(disagreements) & set(DEV_APPLICATIONS_NOT_REJECTED)), len(disagreements)))
+print "Of the disagreements, {} ({}%) went on to final round".format(len(set(disagreements) & set(final_rounds)), percent_of(len(set(disagreements) & set(final_rounds)), len(disagreements)))
+print "Of the disagreements, {} ({}%) ultimately succeeded".format(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['offered'])), percent_of(len(set(disagreements) & set(FINAL_ROUND_DECISIONS['offered'])), len(disagreements)))
 
 print "\nSECOND ROUND NON-TECHNICAL"
 print "{}% passed (of {} total non-technical interviews)".format(percent_of(len([r for r in nontechnical_results.values() if r == '1']), len(nontechnical_results)), len(nontechnical_results))
@@ -151,7 +172,10 @@ for a in DEV_APPLICATIONS.values():
         })
 final_round_results.sort(key=lambda x: x['results'])
 for final_round in final_round_results:
-    print "{} \t{}=> {}".format(final_round['results'], ("\t" if len(final_round['results']) < 7 else ""), final_round['application']['status'])
+    status = final_round['application']['status']
+    if status == 'rejected' and final_round['application']['rejection_direction'] == 'They rejected us':
+        status = 'offered, they declined'
+    print "{} \t{}=> {}".format(final_round['results'], ("\t" if len(final_round['results']) < 7 else ""), status)
 
 
 
