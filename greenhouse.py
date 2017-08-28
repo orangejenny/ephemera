@@ -90,6 +90,7 @@ for s in dev_scorecards:
         application = applications_by_id[s['application_id']]
         candidate = candidates_by_id[application['candidate_id']]
         DEV_APPLICATIONS[s['application_id']] = {
+            'id': s['application_id'],
             'name': "{} {}".format(candidate['first_name'], candidate['last_name']),
             'stages': [
                 [],     # phone screen scorecard
@@ -173,7 +174,7 @@ for a in DEV_APPLICATIONS.values():
 final_round_results.sort(key=lambda x: x['results'])
 for final_round in final_round_results:
     status = final_round['application']['status']
-    if status == 'rejected' and final_round['application']['rejection_direction'] == 'They rejected us':
+    if status == 'rejected' and final_round['application']['id'] in FINAL_ROUND_DECISIONS['offered']:
         status = 'offered, they declined'
     print "{} \t{}=> {}".format(final_round['results'], ("\t" if len(final_round['results']) < 7 else ""), status)
 
@@ -197,17 +198,27 @@ for name, results in interviewers.iteritems():
     for i, stage in enumerate(stage_names):
         stage_stats.append("no " + stage)
         if results[i]:
-            passes = len([s for s in results[i] if re.search(r'yes', s['overall_recommendation'])])
-            total = len(results[i])
+            passes = 0
+            total = 0
+            alignment = 0
+            for scorecard in results[i]:
+                dimagi_passed =  scorecard['application_id'] in FINAL_ROUND_DECISIONS['offered']
+                interviewer_passed = bool(re.search(r'yes', scorecard['overall_recommendation']))
+                if interviewer_passed:
+                    passes = passes + 1
+                if interviewer_passed == dimagi_passed:
+                    alignment = alignment + 1
+                total = total + 1
             stage_stats[i] = "{}% of {} {}".format(percent_of(passes, total), total, stage)
 
     passes = len([scorecard for stages in results for scorecard in stages if re.search(r'yes', scorecard['overall_recommendation'])])
     total = len([scorecard for stages in results for scorecard in stages])
     interviewer_stats.append({
-        'stat': "{} has a {}% pass rate over {} interviews ({}, {}, {})".format(
+        'stat': "{} has a {}% pass rate over {} interviews, {}% aligned ({}, {}, {})".format(
             name,
             percent_of(passes, total),
             total,
+            percent_of(alignment, total),
             stage_stats[0],
             stage_stats[1],
             stage_stats[2]
