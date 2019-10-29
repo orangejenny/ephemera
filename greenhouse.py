@@ -6,6 +6,7 @@ import pprint
 import re
 import requests
 import sys
+from collections import defaultdict
 from requests.auth import HTTPBasicAuth
 
 parser = argparse.ArgumentParser(description='Analyze applicant data')
@@ -142,15 +143,13 @@ print "{} final rounds offered ({}% of final rounds)".format(len(FINAL_ROUND_DEC
 print "{} final rounds still active ({}% of final rounds)".format(len(FINAL_ROUND_DECISIONS['active']), percent_of(len(FINAL_ROUND_DECISIONS['active']), totals[2]))
 
 # Frequency with which 2nd round tech interviews disagree
-technical_results = {}
+technical_results = defaultdict(str)
 nontechnical_results = {}
 for id, a in DEV_APPLICATIONS.iteritems():
     for s in a['stages'][1]:
         if re.search(r'non.technical', s['interview'].lower()):
             nontechnical_results[id] = binary_result(s)
         else:
-            if id not in technical_results:
-                technical_results[id] = ''
             technical_results[id] = technical_results[id] + binary_result(s)
 
 passed_both = len([id for id, result in technical_results.iteritems() if result == '11'])
