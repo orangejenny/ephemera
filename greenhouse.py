@@ -22,12 +22,24 @@ DATA_DIR = "data"
 
 DEV_INTERVIEW_STAGES = {
     r'Dev Round 1 - Phone Screen': 0,
-    r'Dev Round 1 - Technical Interview': 0,
+    r'Phone Screen - Rohit': 0,
+    r'Dev(Ops)? Round 1\W+Technical Interview': 0,
+    r'Technical Phone screen - Hiring team': 0,
+    r'Phone Screen (Shubham/Cal/Ethan/NickP/Manish/Danny)': 0,
+    r'Dev(Ops)? Round 2 - Non-Technical Interview': 1,
+    r'Dev Round 2 - Technical Interview \d': 1,
     r'Dev Round 2 - Non-Technical Interview': 1,
-    r'Dev Round 2 - Technical Interview 1': 1,
-    r'Dev Round 2 - Technical Interview 2': 1,
+    r'Dev(Ops)? Round 2 - Technical Interview 2': 1,
     r'Dev Second Round Technical Interview': 1,
-    r'Dev Peer Panel Review': 2,
+    r'Round 1 - Technical Interview (Manish / Cal)': 1,
+    r'Round 1 - Non-Technical Interview (Nitish, Kishan & Amrita)': 1,
+    r'Dev Round 1 - Technical Interview': 1,
+    r'Dev Round 1 - Non-Technical Interview': 1,
+    r'Technical Interview 1(Cal/Ethan/Nick P/Manish/Danny)': 1,
+    r'Technical Interview 2 (Cal/Ethan/Nick P/Manish/Danny)': 1,
+    r'Non-Technical Interview (Kishan/Kai)': 1,
+    r'Dev(Ops)? Peer Panel Review': 2,
+    r'Coding Exercise - Rohit / Manish / Cal': 2,
 }
 
 def is_dev_interview(interview):
