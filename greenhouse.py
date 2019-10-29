@@ -20,15 +20,25 @@ TOKEN = arguments.token
 DATA_DIR = "data"
 
 DEV_INTERVIEW_STAGES = {
-    'Dev Round 1 - Phone Screen': 0,
-    'Dev Round 1 - Technical Interview': 0,
-    'Dev Round 2 - Non-Technical Interview': 1,
-    'Dev Round 2 - Technical Interview 1': 1,
-    'Dev Round 2 - Technical Interview 2': 1,
-    'Dev Second Round Technical Interview': 1,
-    'Dev Peer Panel Review': 2,
+    r'Dev Round 1 - Phone Screen': 0,
+    r'Dev Round 1 - Technical Interview': 0,
+    r'Dev Round 2 - Non-Technical Interview': 1,
+    r'Dev Round 2 - Technical Interview 1': 1,
+    r'Dev Round 2 - Technical Interview 2': 1,
+    r'Dev Second Round Technical Interview': 1,
+    r'Dev Peer Panel Review': 2,
 }
-DEV_INTERVIEW_TYPES = DEV_INTERVIEW_STAGES.keys()
+
+def is_dev_interview(interview):
+    for key in DEV_INTERVIEW_STAGES.keys():
+        if re.search(key, interview):
+            return True
+    return False
+
+def get_round(interview):
+    for key, value in DEV_INTERVIEW_STAGES.items():
+        if re.search(key, interview):
+            return value
 
 def list_things(type):
     filename = "{}/{}.json".format(DATA_DIR, type)
@@ -80,7 +90,7 @@ applications = list_things('applications')
 tech_application_ids = set([a['id'] for a in applications if set([j['id'] for j in a['jobs']]) & tech_job_ids])
 scorecards = list_things('scorecards')
 tech_scorecards = [s for s in scorecards if s['application_id'] in tech_application_ids]
-dev_scorecards = [s for s in tech_scorecards if s['interview'] in DEV_INTERVIEW_TYPES]
+dev_scorecards = [s for s in tech_scorecards if is_dev_interview(s['interview'])]
 
 candidates_by_id = {c['id']: c for c in candidates}
 applications_by_id = {a['id']: a for a in applications}
@@ -100,7 +110,7 @@ for s in dev_scorecards:
             'status': application['status'],    # note that 'rejected' might mean candidate declined offer, need rejection_direction too
             'rejection_direction': application['rejection_reason']['type']['name'] if application['rejection_reason'] else '',
         }
-    DEV_APPLICATIONS[s['application_id']]['stages'][DEV_INTERVIEW_STAGES[s['interview']]].append(s)
+    DEV_APPLICATIONS[s['application_id']]['stages'][get_round(s['interview'])].append(s)
 
 FINAL_ROUND_DECISIONS = {
     'rejected': [], # list of application ids
