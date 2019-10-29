@@ -21,11 +21,14 @@ TOKEN = arguments.token
 DATA_DIR = "data"
 
 DEV_INTERVIEW_STAGES = {
+    # Phone screens
     r'Dev Round 1 - Phone Screen': 0,
     r'Phone Screen - Rohit': 0,
     r'Dev(Ops)? Round 1\W+Technical Interview': 0,
     r'Technical Phone screen - Hiring team': 0,
     r'Phone Screen (Shubham/Cal/Ethan/NickP/Manish/Danny)': 0,
+
+    # Second rounds
     r'Dev(Ops)? Round 2 - Non-Technical Interview': 1,
     r'Dev Round 2 - Technical Interview \d': 1,
     r'Dev Round 2 - Non-Technical Interview': 1,
@@ -38,6 +41,8 @@ DEV_INTERVIEW_STAGES = {
     r'Technical Interview 1(Cal/Ethan/Nick P/Manish/Danny)': 1,
     r'Technical Interview 2 (Cal/Ethan/Nick P/Manish/Danny)': 1,
     r'Non-Technical Interview (Kishan/Kai)': 1,
+
+    # Final rounds
     r'Dev(Ops)? Peer Panel Review': 2,
     r'Coding Exercise - Rohit / Manish / Cal': 2,
 }
