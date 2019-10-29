@@ -84,7 +84,7 @@ def percent_of(part, whole):
 departments = list_things('departments')
 tech_department_id = next(d['id'] for d in departments if d['name'].lower() == 'tech')
 jobs = list_things('jobs')
-tech_job_ids = set([j['id'] for j in jobs if tech_department_id in [d['id'] for d in j['departments']]])
+tech_job_ids = set([j['id'] for j in jobs if tech_department_id in [d['id'] for d in j['departments'] if d]])
 candidates = list_things('candidates')
 applications = list_things('applications')
 tech_application_ids = set([a['id'] for a in applications if set([j['id'] for j in a['jobs']]) & tech_job_ids])
